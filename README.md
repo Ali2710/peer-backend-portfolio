@@ -11,6 +11,7 @@ Each highlight follows a consistent format: **Problem → Solution → Tech → 
 3. Tokenomics & Fee Model Migration (D)
 4. Media Pipeline: Auto Video Covers + Illegal Content Hardening (E)
 5. Backend Code Quality Program (A)
+6. Referral System: Invite Links & Referral Graph (F)
 
 ---
 
@@ -168,7 +169,36 @@ PHPStan, Rector, strict_types, refactoring, codebase standardization
 - Cleaner, more maintainable codebase with consistent rules.
 - Safer refactoring and better long-term delivery velocity.
 
----
+6) Referral System: Invite Links & Referral Graph (F)
+
+Problem
+- The backend had no referral / invite system: users couldn’t generate invite links, and inviter → invitee relationships weren’t captured in a structured way.
+- Registration needed a backend-owned mechanism to attach a new user to an inviter (without relying on fragile client-side logic).
+
+Solution
+- Implemented the referral system from scratch:
+  - Generated a per-user referral link (referralUuid embedded in the URL).
+  - Persisted referral metadata in a dedicated table (user_referral_info).
+  - Extended signup to accept referralUuid, validate the inviter, and store inviter → invitee linkage.
+- Added a referral list API response (who invited me + who I invited) with pagination.
+
+Implementation Highlights
+- Signup flow: accepts referralUuid, resolves inviter, and links the newly created user to the inviter during createUser.
+- Added referral info persistence and retrieval in UserMapper (idempotent insert + auto-create missing referral info).
+- Implemented queries for invitedBy and iInvited with offset/limit pagination.
+- Exposed referralList() payload with invitedBy + iInvited lists and counts.
+
+Verified PRs
+Main: peer-network/peer_backend#149
+
+Tech
+PHP, GraphQL, SQL (PDO), DB persistence (user_referral_info), registration flow, validation/guardrails, pagination (offset/limit)
+
+Outcome
+- Referral system introduced to the platform: stable invite links + stored referral identity per user.
+- Inviter → invitee relationships are recorded at signup and can be surfaced via referral list API for product/ops needs.
+- Laid the foundation for the later “invite-only / mandatory invitation” registration policy (implemented after this PR).
+
 
 ## Interview Talking Points (quick)
 - I ship product features (feed ranking, action pricing, onboarding).
